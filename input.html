@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>你不知道的html之input标签</title>
+</head>
+<body>
+<div><label for="file1">单个文件</label><input id="file1" type="file" accept="image/*"></div>
+<br>
+<div><label for="file2">多个文件</label><input id="file2" type="file" accept="image/*" multiple></div>
+<br>
+<div><label for="file3">选择目录下所有文件</label><input id="file3" type="file" webkitdirectory></div>
+<br>
+<div><label for="file4">选择或拖放目录下所有文件并获取目录结构</label><input id="file4" type="file" webkitdirectory></div>
+
+<script>
+  addFileChangeListener('file1', 'change')
+  addFileChangeListener('file2', 'change')
+  addFileChangeListener('file3', 'change')
+  addFileChangeListener('file4', 'change', (files) => {
+		const fileRoot = {
+			dir: files[0].webkitRelativePath.split('/')[0],
+      files: [],
+      children: []
+    }
+    files.forEach(file => {
+			addToParent(fileRoot, file.webkitRelativePath.split('/'), file)
+    })
+    console.log(fileRoot)
+  })
+
+  function addFileChangeListener(idSelector, event, successCallback) {
+		document.getElementById(idSelector).addEventListener(event, e => {
+			const curFiles = Array.from(e.target.files)
+			console.log(curFiles)
+      if (!curFiles.length) return window.alert('请选择文件')
+      successCallback && successCallback(curFiles)
+			curFiles.forEach(file => {
+				if (validFileType(file, 'image')) {
+					const img = document.createElement('img')
+					img.src=URL.createObjectURL(file)
+					document.body.append(img)
+        }
+			})
+		})
+  }
+
+	function validFileType(file, type) {
+		return file.type.indexOf(type) > -1
+  }
+
+	/**
+   * 文件添加到父节点
+	 * @param node 父节点
+	 * @param path 路径数组
+	 * @param file 文件对象
+	 * @returns {*}
+	 */
+	function addToParent(node, path, file) {
+    if (path.length === 2) {
+			// 过滤掉mac的系统文件
+			if (node.dir === path[0] && file.name !== '.DS_Store') {
+				node.files.push(file)
+      }
+			return
+    }
+    let child = node.children.find(item => item.dir === path[1])
+		if (!child) {
+			child = {
+				dir: path[1],
+				files: [],
+				children: []
+			}
+			node.children.push(child)
+    }
+		addToParent(child, path.slice(1), file)
+  }
+</script>
+</body>
+</html>
